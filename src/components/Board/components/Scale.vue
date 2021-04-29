@@ -110,12 +110,12 @@
 
 <template>
   <div class="xpe_scale">
-    <!-- 刻度尺 -->
+    <!-- 刻度尺 
+      @contextmenu.stop.prevent="handleRightClick($event)"-->
     <div
       class="scale_x"
       :style="{ 'width': width + 'px' }"
       @mousedown.stop.prevent="handleMouseDownOnScale('x', $event)"
-      @contextmenu.stop.prevent="handleRightClick($event)"
     >
       <div
         class="scale_item"
@@ -127,11 +127,12 @@
         {{ item.text }}
       </div>
     </div>
+    <!-- @contextmenu.stop.prevent="handleRightClick($event)" -->
     <div
       class="scale_y"
       :style="{ 'height': height + 'px'}"
       @mousedown.stop.prevent="handleMouseDownOnScale('y', $event)"
-      @contextmenu.stop.prevent="handleRightClick($event)"
+      
     >
       <div
         class="scale_item"

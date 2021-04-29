@@ -7,7 +7,7 @@
 <style  lang="less" rel="stylesheet/less">
   .xpe_canvas {
     display: inline-block;
-    position: absolute;
+    position: static;
     z-index: 2000;
     top: 0;
     right: 0;
@@ -16,7 +16,7 @@
 
     .canvas-box {
       display: inline-block;
-      position: absolute;
+      position: static;
       left: 50%;
       margin: 100px 0;
       background: #fff;
@@ -41,7 +41,7 @@
 
       .selection {
         display: none;
-        position: absolute;
+        position: static;
         border: 1px solid transparent;
         border-image: url("../../../assets/selection.gif");
         border-image-slice: 1;
@@ -56,6 +56,7 @@
   <div
     class="xpe_canvas"
   >
+  <!-- @contextmenu.stop.prevent="handleRightClickOnCanvas($event)" -->
     <div
       v-for="item in canvasMap"
       v-show="currentProject === item.id"
@@ -65,21 +66,24 @@
       :project-id="item.id"
       :name="item.name"
       :title="item.name"
-      @contextmenu.stop.prevent="handleRightClickOnCanvas($event)"
+      
       @drop.stop.prevent="handleDropOnCanvas(item, $event)"
       @dragover.stop.prevent
     >
       <!-- 选中虚线框效果 -->
-      <div
+      <!-- <div
         v-for="(selectionStyle, key) in item.selectionStyleMap"
         :key="'selection-' + key"
         :selection-id="'selection-' + key"
         class="selection"
         :style="selectionStyle"
-      ></div>
+      >
+      </div> -->
+
       <template
         v-for="(node, index) in item.components"
       >
+      <!-- @contextmenu.native.stop.prevent="handleRightClickOnNode(node, $event)" -->
         <component
           class="component-node"
           :is="node.component.name"
@@ -87,14 +91,17 @@
           :node-id="node.id"
           v-bind="node.props"
           :style="node.style"
-          @contextmenu.native.stop.prevent="handleRightClickOnNode(node, $event)"
+          
           @click.native.stop.prevent="handleComponentTrigger(node)"
           draggable="true"
-          @dragstart.native="handleDragStart(node, $event)"
+          @dragstart.native.stop="handleDragStart(node, $event)"
+          @dragend.native.stop="handleDragEnd(node, $event)"
           @mouseover.native.stop.prevent="handleMouseOverOnNode(node)"
           @mouseout.native.stop.prevent="handleMouseOutOnNode(node)"
           @drop.native.stop.prevent="handleDropOnNode(node, $event)"
           @dragover.stop.prevent
+          @dragenter.native.stop.prevent="handleDropEnterNode(node, $event)"
+          @dragleave.native.stop.prevent="handleDropLeaveNode(node, $event)"
         >
           {{ node.innerHTML}}
           <template
@@ -111,11 +118,14 @@
               @contextmenu.native.stop.prevent="handleRightClickOnNode(childNode, $event)"
               @click.native.stop.prevent="handleComponentTrigger(childNode)"
               draggable="true"
-              @dragstart.native="handleDragStart(childNode, $event)"
+              @dragstart.native.stop="handleDragStart(childNode, $event)"
+              @dragend.native.stop="handleDragEnd(childNode, $event)"
               @mouseover.native.stop.prevent="handleMouseOverOnNode(childNode)"
               @mouseout.native.stop.prevent="handleMouseOutOnNode(childNode)"
               @drop.stop.prevent="handleDropOnNode(childNode, $event)"
               @dragover.stop.prevent
+              @dragenter.native.stop.prevent="handleDropEnterNode(childNode, $event)"
+              @dragleave.native.stop.prevent="handleDropLeaveNode(childNode, $event)"
             >
             </component>
           </template>
@@ -432,27 +442,35 @@ export default {
       let _t = this
       // 更新当前操作的节点
       _t.currentNode = ''
-      let canvasMap = _t.canvasMap
-      _t.canvasMap[_t.currentProject]['components'] = canvasMap[_t.currentProject]['components'].filter(node => {
-        if (node.id !== nodeInfo.id) {
-          return true
-        }
-        return false
-      })
-      console.log('canvasMap', canvasMap)
+      let _canvas = _t.canvasMap[_t.currentProject];
+      _canvas['components'] = _canvas['components']
+          .filter(
+            node => {
+              if (node.id !== nodeInfo.id) {
+                return true
+              }
+              return false
+            }
+          );
+      console.log('canvasMap', _canvas)
       // 广播事件，更新当前激活组件
       utils.bus.$emit('XPE/project/component/remove', nodeInfo)
-      _t.$nextTick(function () {
-        _t.handleMouseOutOnNode()
-      })
+      _t.$nextTick(
+          function () {
+            _t.handleMouseOutOnNode()
+          }
+        );
     },
-    // 元素drop
+    // 元素drop 元素正在拖动时触发
     handleDropOnCanvas: function (item, event) {
-      let _t = this
-      console.log('handleDropOnCanvas')
-      let canvasMap = _t.canvasMap
+      let _t = this;
+      let canvasMap = _t.canvasMap;
+      console.log('handleDropOnCanvas 放画布上',canvasMap);
       // 获取节点数据
-      let nodeInfo = JSON.parse(event.dataTransfer.getData('node'))
+      let nodeInfo = JSON.parse(event.dataTransfer.getData('node'));
+      // if (nodeInfo.component.name=='FormItem') {
+      //   return;
+      // }
       nodeInfo = {
         id: '',
         components: {},
@@ -460,48 +478,71 @@ export default {
         slots: {},
         innerHTML: '',
         ...nodeInfo
-      }
-      let offsetX = event.offsetX
-      let offsetY = event.offsetY
+      };
+      let offsetX = event.offsetX;
+      let offsetY = event.offsetY;
       let style = {
-        position: 'absolute',
-        'pointer-events': 'auto',
-        left: offsetX + 'px',
-        top: offsetY + 'px'
-      }
+        // position: 'absolute',
+        // 'pointer-events': 'auto',
+        // left: offsetX + 'px',
+        // top: offsetY + 'px'
+      };
       // console.log('style', style)
       nodeInfo.style = {
         ...nodeInfo.style,
         ...style
       }
+      let _components=canvasMap[item.id]['components'];
       // 更新当前画布下的组件数据
-      if (canvasMap[item.id]['components'].length) {
-        // 判断该节点是否已存在
-        let nodeIndex = canvasMap[item.id]['components'].findIndex(node => node.id === nodeInfo.id)
-        if (nodeIndex > -1) {
-          canvasMap[item.id]['components'][nodeIndex] = nodeInfo
-        } else {
-          canvasMap[item.id]['components'].push(nodeInfo)
-        }
-      } else {
-        canvasMap[item.id]['components'].push(nodeInfo)
-      }
+      if (_components.length) {
+
+        _components=_components.filter(
+            node => {
+              if(node.children){
+                node.children=node.children.filter(node2=>node2.id !== nodeInfo.id)
+              }
+              return node.id !== nodeInfo.id;
+            }
+          );
+
+        // // 判断该节点是否已存在
+        // let nodeIndex = _components.findIndex(node => node.id === nodeInfo.id);
+        // if (nodeIndex > -1) {
+        //   _components[nodeIndex] = nodeInfo;
+        // } else {
+        //   _components.push(nodeInfo);
+        // }
+      } 
+      _components.push(nodeInfo);
+
+      canvasMap[item.id]['components']=_components;
+
       _t.canvasMap = {
         ...canvasMap
-      }
+      };
       // 更新当前操作的节点
-      _t.currentNode = nodeInfo.id
+      _t.currentNode = nodeInfo.id;
       // 广播事件，更新当前激活组件
       utils.bus.$emit('XPE/project/component/trigger', nodeInfo)
-      _t.$nextTick(function () {
-        _t.handleMouseOverOnNode(nodeInfo)
-        _t.handleMouseOutOnNode()
-      })
+      _t.$nextTick(
+        function () {
+          _t.handleMouseOverOnNode(nodeInfo);
+          _t.handleMouseOutOnNode();
+        }
+      );
+    },
+    handleDropEnterNode: function (parentNode, event) {
+      let _t = this;
+      console.log('handleDropEnterNode 放节点上',`${parentNode.component.name}[${parentNode.id}]`, event);
+    },
+    handleDropLeaveNode: function (parentNode, event) {
+      let _t = this;
+      console.log('handleDropLeaveNode',`${parentNode.component.name}[${parentNode.id}]`, event);
     },
     handleDropOnNode: function (parentNode, event) {
-      let _t = this
-      console.log('handleDropOnNode')
-      let canvasMap = _t.canvasMap
+      let _t = this;
+      let canvasMap = _t.canvasMap;
+      console.log('handleDropOnNode',canvasMap);
       // 获取节点数据
       let nodeInfo = JSON.parse(event.dataTransfer.getData('node'))
       nodeInfo = {
@@ -511,9 +552,9 @@ export default {
         slots: {},
         innerHTML: '',
         ...nodeInfo
-      }
+      };
       // 是否可以嵌套标识
-      let isNest = false
+      let isNest = false;
       let parentNest = parentNode.component.nest || {
         enable: false,
         parent: {
@@ -524,7 +565,7 @@ export default {
           allow: [],
           deny: []
         }
-      }
+      };
       let childNest = nodeInfo.component.nest || {
         enable: false,
         parent: {
@@ -535,9 +576,9 @@ export default {
           allow: [],
           deny: []
         }
-      }
-      let parentName = parentNode.component.name
-      let childName = nodeInfo.component.name
+      };
+      let parentName = parentNode.component.name;
+      let childName = nodeInfo.component.name;
       // 判断目标节点是否支持嵌套
       if (parentNest.enable) {
         if (!parentNest.children.allow.length && !parentNest.children.deny.length && !childNest.parent.allow.length && !childNest.parent.deny.length) {
@@ -552,53 +593,71 @@ export default {
           isNest = !childNest.parent.deny.includes(parentName)
         }
       }
+      console.log(parentNest);
       if (!isNest) {
         // TODO 弹窗提示不能嵌套
-        utils.bus.$emit('XPE/canvas/nest/notice')
-        return
+        utils.bus.$emit('XPE/canvas/nest/notice');
+        return;
       }
-      let offsetX = event.offsetX
-      let offsetY = event.offsetY
+      let offsetX = event.offsetX;
+      let offsetY = event.offsetY;
       let style = {
-        position: 'absolute',
-        'pointer-events': 'auto',
-        left: offsetX + 'px',
-        top: offsetY + 'px'
-      }
+        position: 'static',
+        // 子元素可以声明pointer-events来解禁父元素的阻止鼠标事件限制。
+        // 如果你对一个元素设置了click事件监听器，然后你移除了pointer-events样式声明，
+        // 或把它的值改变为auto，监听器会重新生效。基本上，监听器会遵守pointer-events的设定。
+        // 'pointer-events': 'auto',
+        // left: offsetX + 'px',
+        // top: offsetY + 'px'
+      };
       // console.log('style', style)
       nodeInfo.style = {
         ...nodeInfo.style,
         ...style
-      }
+      };
+      let _canvas=canvasMap[_t.currentProject];
       // 1.删除当前节点
-      canvasMap[_t.currentProject]['components'] = canvasMap[_t.currentProject]['components'].filter(node => {
-        if (node.id !== nodeInfo.id) {
-          return true
-        }
-        return false
-      })
+      _canvas['components'] = 
+          _canvas['components']
+          .filter(
+            node => {
+              if (node.id !== nodeInfo.id) {
+                return true
+              }
+              return false
+            }
+          );
       // 2.给当前节点设置children
-      canvasMap[_t.currentProject]['components'].map(node => {
-        if (node.id === parentNode.id) {
-          if (!node.hasOwnProperty('children')) {
-            node.children = []
-          }
-          node.children.push(nodeInfo)
-        }
-        return node
-      })
+      _canvas['components']
+          .map(
+            node => {
+              if (node.id === parentNode.id) {
+                if (!node.hasOwnProperty('children')) {
+                  node.children = []
+                }
+                node.children.push(nodeInfo)
+              }
+              return node
+            }
+          );
       _t.canvasMap = {
         ...canvasMap
-      }
-      _t.$nextTick(function () {
-        _t.handleComponentTrigger(nodeInfo)
-      })
+      };
+      _t.$nextTick(
+        function () {
+          _t.handleComponentTrigger(nodeInfo)
+        }
+      );
     },
     // 节点拖拽
     handleDragStart: function (nodeInfo, event) {
-      // console.log('handleDragStart nodeInfo', nodeInfo.component.name)
+      console.log('handleDragStart',`${nodeInfo.component.name}[${nodeInfo.id}]`);
       // 拖拽的节点数据
-      event.dataTransfer.setData('node', JSON.stringify(nodeInfo))
+      event.dataTransfer.setData('node', JSON.stringify(nodeInfo));
+    },
+    handleDragEnd: function (nodeInfo, event) {
+      console.log('handleDragEnd',`${nodeInfo.component.name}[${nodeInfo.id}]` );
+      // 拖拽的节点数据
     },
     // 处理options更新
     handleOptionsSet: function (nodeInfo) {
@@ -633,7 +692,7 @@ export default {
     },
     handleMouseOverOnNode: function (nodeInfo) {
       let _t = this
-      // console.log('handleMouseOverOnNode')
+      console.log('handleMouseOverOnNode',`${nodeInfo.component.name}[${nodeInfo.id}]`);
       let target = document.querySelector('[node-id=' + nodeInfo.id + ']')
       if (target) {
         let width = target.offsetWidth + 2

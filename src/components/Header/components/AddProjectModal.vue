@@ -69,7 +69,7 @@ export default {
       isShow: false,
       // 表单数据
       formData: {
-        name: '',
+        name: 'def',
         type: '',
         width: 0,
         height: 0
@@ -116,7 +116,7 @@ export default {
       let _t = this
       // 初始化formData
       _t.formData = {
-        name: '',
+        name: 'def',
         type: 'pc',
         width: _t.typeMap['pc']['width'],
         height: _t.typeMap['pc']['height']

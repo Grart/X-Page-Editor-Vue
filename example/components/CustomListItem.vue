@@ -84,7 +84,6 @@
 
 <script>
   import navigate from '../resources/config/navigate'
-
   export default {
     name: 'CustomListItem',
     data () {
@@ -105,7 +104,11 @@
           props: {},
           slots: {},
           options: {},
-          innerHTML: ''
+          innerHTML: '',
+          style:component.style||{
+            width:100+'px',
+            position: 'static'
+          }
         }
         event.dataTransfer.setData('node', JSON.stringify(nodeInfo))
         console.log('handleDragStart nodeInfo', nodeInfo, _t.lang)

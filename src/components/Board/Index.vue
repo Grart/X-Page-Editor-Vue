@@ -58,11 +58,12 @@
 </style>
 
 <template>
+<!-- @contextmenu.stop.prevent="handleRightClick($event)" -->
   <div
     id="xpe_board"
     :class="{'xpe_board': true, 'draw-guides_x': guides.status.move && guides.type === 'x', 'draw-guides_y': guides.status.move && guides.type === 'y' }"
     @dblclick.stop.prevent="toggleExpand"
-    @contextmenu.stop.prevent="handleRightClick($event)"
+    
     @mousemove="handleMouseMoveOnBoard($event)"
     @mouseup.stop.prevent="handleMouseUpOnBoard($event)"
   >

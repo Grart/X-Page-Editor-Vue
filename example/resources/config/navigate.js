@@ -47,6 +47,10 @@ const list = {
           title: 'Button 按钮',
           name: 'Button',
           icon: 'social-youtube-outline',
+          style:{
+            width:'100px',
+            height:'35px'
+          },
           nest: {
             enable: true,
             parent: {
@@ -405,6 +409,15 @@ const list = {
           title: 'Form 表单',
           name: 'Form',
           icon: 'ios-list-outline',
+          style:{
+            width:'100%',
+            height:'100%',
+            display:'fixed',
+            left:'0px',
+            flexDirection: 'column',
+            border: 'solid',
+            borderWidth: '1px'
+          },
           nest: {
             enable: true,
             parent: {
@@ -421,6 +434,15 @@ const list = {
           title: 'FormItem 表单域',
           name: 'FormItem',
           icon: 'ios-list-outline',
+          style:{
+            width:'100%',
+            height:'30px',
+            display:'fixed',
+            left:'0px',
+            flex: 1,
+            border: 'solid',
+            borderWidth: '1px'
+          },
           nest: {
             enable: true,
             parent: {
@@ -459,6 +481,11 @@ const list = {
           title: 'Card 卡片',
           name: 'Card',
           icon: 'ios-browsers-outline',
+          style:{
+            width:'300px',
+            height:'400px',
+            display:'static'
+          },
           nest: {
             enable: true,
             parent: {
