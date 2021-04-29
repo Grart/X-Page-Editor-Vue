@@ -533,7 +533,7 @@ export default {
     },
     handleDropEnterNode: function (parentNode, event) {
       let _t = this;
-      console.log('handleDropEnterNode 放节点上',`${parentNode.component.name}[${parentNode.id}]`, event);
+      console.log('handleDropEnterNode',`${parentNode.component.name}[${parentNode.id}]`, event);
     },
     handleDropLeaveNode: function (parentNode, event) {
       let _t = this;
@@ -542,7 +542,7 @@ export default {
     handleDropOnNode: function (parentNode, event) {
       let _t = this;
       let canvasMap = _t.canvasMap;
-      console.log('handleDropOnNode',canvasMap);
+      console.log('handleDropOnNode 放节点上',canvasMap);
       // 获取节点数据
       let nodeInfo = JSON.parse(event.dataTransfer.getData('node'))
       nodeInfo = {
@@ -621,10 +621,11 @@ export default {
           _canvas['components']
           .filter(
             node => {
-              if (node.id !== nodeInfo.id) {
-                return true
+              if(node.children){
+                node.children=node.children.filter(node2=>node2.id !== nodeInfo.id)
               }
-              return false
+              
+              return node.id !== nodeInfo.id;
             }
           );
       // 2.给当前节点设置children
